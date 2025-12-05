@@ -1,31 +1,38 @@
 'use client'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 export default function GroupRoom() {
   const { code } = useParams()
-  const groupKey = `group-${code}`
-
   const [name, setName] = useState('')
   const [members, setMembers] = useState<string[]>([])
 
   useEffect(() => {
-    const stored = localStorage.getItem(groupKey)
-    if (stored) {
-      setMembers(JSON.parse(stored))
-    }
-  }, [groupKey])
+    const ref = doc(db, 'groups', String(code))
 
-  function joinGroup() {
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        setMembers(snap.data().members || [])
+      }
+    })
+
+    return () => unsub()
+  }, [code])
+
+  async function joinGroup() {
     if (!name.trim()) return
     if (members.includes(name.trim())) {
       alert('Name already exists!')
       return
     }
 
-    const updated = [...members, name.trim()]
-    setMembers(updated)
-    localStorage.setItem(groupKey, JSON.stringify(updated))
+    const ref = doc(db, 'groups', String(code))
+    await updateDoc(ref, {
+      members: [...members, name.trim()],
+    })
+
     setName('')
   }
 
@@ -51,6 +58,12 @@ export default function GroupRoom() {
           </button>
         </div>
 
+        {members.length === 0 && (
+          <p className="text-center text-gray-500">
+            No members added yet
+          </p>
+        )}
+
         <div className="space-y-2">
           {members.map((m, i) => (
             <div
@@ -61,10 +74,6 @@ export default function GroupRoom() {
             </div>
           ))}
         </div>
-
-        <p className="text-sm text-gray-600 text-center">
-          Group members stored in local storage. Works on this browser only.
-        </p>
       </div>
     </div>
   )

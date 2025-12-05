@@ -4,18 +4,24 @@ import { useState } from 'react'
 import confetti from 'canvas-confetti'
 import { QRCodeCanvas } from 'qrcode.react'
 import { motion } from 'framer-motion'
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 export default function CreateGroupPage() {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [snow, setSnow] = useState(true)
 
-  function createGroup() {
+  async function createGroup() {
     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-    localStorage.setItem(`group-${newCode}`, JSON.stringify([]))
+
+    await setDoc(doc(db, 'groups', newCode), {
+      members: [],
+      createdAt: new Date(),
+    })
+
     setCode(newCode)
 
-    // ✅ Success Confetti
     confetti({
       particleCount: 180,
       spread: 120,
@@ -97,9 +103,7 @@ export default function CreateGroupPage() {
               <QRCodeCanvas value={joinLink} size={160} />
             </div>
 
-            <p className="text-sm text-gray-600">
-              Scan to join instantly
-            </p>
+            <p className="text-sm text-gray-600">Scan to join instantly</p>
 
             <button
               onClick={goToGroup}

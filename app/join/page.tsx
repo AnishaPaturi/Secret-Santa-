@@ -2,16 +2,19 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 export default function JoinPage() {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [snow, setSnow] = useState(true)
 
-  function joinGroup() {
-    const exists = localStorage.getItem(`group-${code.toUpperCase()}`)
+  async function joinGroup() {
+    const ref = doc(db, 'groups', code.toUpperCase())
+    const snap = await getDoc(ref)
 
-    if (!exists) {
+    if (!snap.exists()) {
       alert('Invalid group code ❌')
       return
     }
@@ -49,14 +52,14 @@ export default function JoinPage() {
           ))}
         </div>
       )}
+
       {/* 🎅 Animated Santa */}
-        <motion.img
+      <motion.img
         src="/santa.gif"
         className="absolute bottom-6 left-6 w-40 z-20"
         animate={{ y: [0, -10, 0] }}
         transition={{ repeat: Infinity, duration: 2 }}
-        />
-
+      />
 
       {/* Main Card */}
       <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-4 text-center z-10">
@@ -84,7 +87,7 @@ export default function JoinPage() {
         </button>
       </div>
 
-      {/* ✅ Snow Animation CSS (THIS WAS MISSING) */}
+      {/* ✅ Snow Animation CSS */}
       <style jsx global>{`
         @keyframes snow {
           to {
@@ -97,7 +100,6 @@ export default function JoinPage() {
           animation-iteration-count: infinite;
         }
       `}</style>
-
     </div>
   )
 }
