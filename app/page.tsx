@@ -132,13 +132,22 @@ export default function SecretSanta() {
         )}
       </div>
 
-      {/* Join Group Button */}
-      <button
-        onClick={() => router.push('/join')}
-        className="fixed top-4 left-4 bg-white text-black px-4 py-2 rounded-full font-semibold shadow z-30"
-      >
-        Join a Group
-      </button>
+      {/* Join / Create Group Buttons */}
+      <div className="fixed top-4 left-4 flex gap-2 z-30">
+        <button
+          onClick={() => router.push('/join')}
+          className="bg-white text-black px-4 py-2 rounded-full font-semibold shadow"
+        >
+          Join Group
+        </button>
+
+        <button
+          onClick={() => router.push('/create')}
+          className="bg-green-600 text-white px-4 py-2 rounded-full font-semibold shadow"
+        >
+          Create Group
+        </button>
+      </div>
 
       {snow && (
         <div className="absolute inset-0 pointer-events-none">
