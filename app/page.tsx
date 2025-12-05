@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+const [shareLink, setShareLink] = useState('')
 let confetti: any = null
 if (typeof window !== 'undefined') {
   import('canvas-confetti').then(mod => {
@@ -66,19 +67,31 @@ export default function SecretSanta() {
     setNames(names.filter((_, idx) => idx !== i))
   }
 
-  function generatePairs() {
-    if (!validateNames(names)) return
-    let givers = shuffle([...names])
-    let receivers = shuffle([...names])
+  async function generatePairs() {
+  if (!validateNames(names)) return
 
-    while (givers.some((g, i) => g === receivers[i])) {
-      receivers = shuffle([...names])
-    }
-
-    const result = givers.map((g, i) => ({ giver: g, receiver: receivers[i] }))
-    setPairs(result)
-    setStarted(true)
+  let givers = shuffle([...names])
+  let receivers = shuffle([...names])
+  while (givers.some((g, i) => g === receivers[i])) {
+    receivers = shuffle([...names])
   }
+
+  const result = givers.map((g, i) => ({ giver: g, receiver: receivers[i] }))
+  setPairs(result)
+  setStarted(true)
+
+  // ✅ SAVE GAME TO SERVER
+  const res = await fetch('/api/game', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pairs: result })
+  })
+
+  const data = await res.json()
+  const link = `${window.location.origin}/game/${data.gameId}`
+  setShareLink(link)
+}
+
 
   function nextPerson() {
     setRevealed(false)
@@ -173,6 +186,14 @@ export default function SecretSanta() {
             </button>
           </>
         )}
+        {shareLink && (
+          <div className="bg-green-100 text-black p-3 rounded text-sm break-all text-center">
+            Share this link with players:
+            <br />
+            <strong>{shareLink}</strong>
+          </div>
+        )}
+
 
         {started && index < pairs.length && (
           <>
