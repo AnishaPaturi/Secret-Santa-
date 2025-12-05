@@ -8,6 +8,10 @@ export default function CreateGroupPage() {
 
   function createGroup() {
     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+
+    // Save empty group in localStorage
+    localStorage.setItem(`group-${newCode}`, JSON.stringify([]))
+
     setCode(newCode)
   }
 
@@ -16,8 +20,8 @@ export default function CreateGroupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-red-700 text-white p-6">
-      <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-4 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-red-700 p-6">
+      <div className="bg-white rounded-2xl p-8 w-full max-w-md space-y-4 text-center">
         <h1 className="text-2xl font-bold">🎄 Create a Secret Santa Group</h1>
 
         {!code && (
@@ -31,7 +35,7 @@ export default function CreateGroupPage() {
 
         {code && (
           <>
-            <p className="text-lg font-semibold">Group Code:</p>
+            <p className="text-lg font-semibold mt-4">Group Code</p>
             <p className="text-3xl font-bold tracking-widest bg-gray-100 py-2 rounded">
               {code}
             </p>
@@ -40,21 +44,18 @@ export default function CreateGroupPage() {
               onClick={goToGroup}
               className="w-full bg-green-600 text-white py-2 rounded"
             >
-              Enter Group
+              Open Group Room
             </button>
 
             <button
-              onClick={() =>
-                navigator.share
-                  ? navigator.share({
-                      title: 'Join my Secret Santa!',
-                      url: `${window.location.origin}/group/${code}`,
-                    })
-                  : alert('Copy this link and share it!')
-              }
+              onClick={() => {
+                const link = `${window.location.origin}/group/${code}`
+                navigator.clipboard.writeText(link)
+                alert('Group link copied!')
+              }}
               className="w-full bg-blue-600 text-white py-2 rounded"
             >
-              Share Link
+              Copy Share Link
             </button>
           </>
         )}
