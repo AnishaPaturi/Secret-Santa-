@@ -5,6 +5,7 @@ import { useState } from 'react'
 export default function JoinPage() {
   const router = useRouter()
   const [code, setCode] = useState('')
+  const [snow, setSnow] = useState(true)
 
   function joinGroup() {
     const exists = localStorage.getItem(`group-${code.toUpperCase()}`)
@@ -18,8 +19,38 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-red-700 p-6">
-      <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-4 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-700 to-rose-600 p-6 overflow-hidden relative">
+
+      {/* Snow Toggle */}
+      <div className="fixed top-4 right-4 z-30">
+        <button
+          onClick={() => setSnow(!snow)}
+          className="px-3 py-1 bg-white text-black rounded"
+        >
+          ❄️
+        </button>
+      </div>
+
+      {/* Snowfall */}
+      {snow && (
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute top-[-10px] bg-white rounded-full opacity-80 animate-snow"
+              style={{
+                left: `${Math.random() * 100}%`,
+                width: `${Math.random() * 4 + 2}px`,
+                height: `${Math.random() * 4 + 2}px`,
+                animationDuration: `${Math.random() * 6 + 6}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Main Card */}
+      <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-4 text-center z-10">
         <h1 className="text-2xl font-bold">🎁 Join a Secret Santa Group</h1>
 
         <input
@@ -43,6 +74,21 @@ export default function JoinPage() {
           ← Back to Home
         </button>
       </div>
+
+      {/* ✅ Snow Animation CSS (THIS WAS MISSING) */}
+      <style jsx global>{`
+        @keyframes snow {
+          to {
+            transform: translateY(110vh);
+          }
+        }
+        .animate-snow {
+          animation-name: snow;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
+        }
+      `}</style>
+
     </div>
   )
 }
