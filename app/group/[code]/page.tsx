@@ -10,37 +10,44 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
+type Pair = { giver: string; receiver: string }
+
 export default function GroupRoom() {
   const { code } = useParams()
-  const groupRef = doc(db, 'groups', String(code))
+  const groupCode = String(code)
+  const groupRef = doc(db, 'groups', groupCode)
 
   const [myName, setMyName] = useState('')
   const [hasJoined, setHasJoined] = useState(false)
 
   const [members, setMembers] = useState<string[]>([])
-  const [pairs, setPairs] = useState<{ giver: string; receiver: string }[]>([])
+  const [pairs, setPairs] = useState<Pair[]>([])
   const [started, setStarted] = useState(false)
 
-  const [myPair, setMyPair] = useState<{ giver: string; receiver: string } | null>(null)
+  const [myPair, setMyPair] = useState<Pair | null>(null)
   const [revealed, setRevealed] = useState(false)
 
-  // ✅ REALTIME FIREBASE SYNC
+  // ✅ REAL-TIME FIREBASE SYNC
   useEffect(() => {
     const unsub = onSnapshot(groupRef, snap => {
       if (!snap.exists()) return
 
       const data = snap.data()
 
-      setMembers(data.members || [])
-      setPairs(data.pairs || [])
-      setStarted(data.started || false)
+      const dbMembers: string[] = data.members || []
+      const dbPairs: Pair[] = data.pairs || []
+      const dbStarted: boolean = data.started || false
 
-      if (data.started && myName.trim()) {
-        const found = data.pairs?.find(
-            (p: any) => p.giver.toLowerCase() === myName.trim().toLowerCase()
+      setMembers(dbMembers)
+      setPairs(dbPairs)
+      setStarted(dbStarted)
+
+      if (dbStarted && myName.trim()) {
+        const found = dbPairs.find(
+          p => p.giver.toLowerCase() === myName.trim().toLowerCase()
         )
         setMyPair(found || null)
-        }
+      }
     })
 
     return () => unsub()
@@ -48,34 +55,36 @@ export default function GroupRoom() {
 
   // ✅ JOIN GROUP
   async function joinGroup() {
-    if (!myName.trim()) {
+    const name = myName.trim()
+
+    if (!name) {
       alert('Please enter your name')
       return
     }
 
-    if (members.map(m => m.toLowerCase()).includes(myName.trim().toLowerCase())) {
-      alert('Name already exists!')
+    if (members.some(m => m.toLowerCase() === name.toLowerCase())) {
+      alert('This name already exists!')
       return
     }
 
     await updateDoc(groupRef, {
-      members: [...members, myName.trim()],
+      members: [...members, name],
     })
 
     setHasJoined(true)
   }
 
-  // ✅ SHUFFLE LOGIC
-  function shuffle(array: string[]) {
-    const arr = [...array]
-    for (let i = arr.length - 1; i > 0; i--) {
+  // ✅ SHUFFLE
+  function shuffle(arr: string[]) {
+    const a = [...arr]
+    for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+      ;[a[i], a[j]] = [a[j], a[i]]
     }
-    return arr
+    return a
   }
 
-  // ✅ START GAME (ANY ONE PERSON)
+  // ✅ START GAME (ONLY ONCE)
   async function startGame() {
     if (members.length < 2) {
       alert('Need at least 2 members!')
@@ -89,7 +98,7 @@ export default function GroupRoom() {
       receivers = shuffle([...members])
     }
 
-    const result = givers.map((g, i) => ({
+    const result: Pair[] = givers.map((g, i) => ({
       giver: g,
       receiver: receivers[i],
     }))
@@ -104,10 +113,10 @@ export default function GroupRoom() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-700 to-rose-600 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl p-8 w-full max-w-md space-y-5 shadow-xl text-black">
+      <div className="bg-white rounded-2xl p-8 w-full max-w-md space-y-6 shadow-xl text-black">
 
         <h2 className="text-2xl font-bold text-center">
-          🎁 Group: {code}
+          🎁 Group: {groupCode}
         </h2>
 
         {/* ✅ BEFORE JOIN */}
@@ -149,7 +158,7 @@ export default function GroupRoom() {
           </div>
         )}
 
-        {/* ✅ START BUTTON */}
+        {/* ✅ START BUTTON (ANYONE CAN START ONCE) */}
         {!started && members.length >= 2 && (
           <button
             onClick={startGame}
@@ -171,7 +180,7 @@ export default function GroupRoom() {
               </button>
             ) : (
               <>
-                <p className="text-center mt-4">You gift 🎁</p>
+                <p className="text-center mt-4">🎁 You gift:</p>
                 <p className="text-3xl text-center font-bold text-green-600">
                   {myPair.receiver}
                 </p>
@@ -180,9 +189,10 @@ export default function GroupRoom() {
           </>
         )}
 
-        {started && !myPair && (
+        {/* ✅ JOINED TOO LATE / NAME MISMATCH */}
+        {started && hasJoined && !myPair && (
           <p className="text-center text-gray-500">
-            Waiting for your name to be added before game start...
+            You joined after the game started.
           </p>
         )}
       </div>
