@@ -2,17 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-
-type Pair = { giver: string; receiver: string }
+import confetti from 'canvas-confetti'
+import { useRouter } from 'next/navigation'
 
 export default function SecretSanta() {
-  // ✅ ALL HOOKS SAFELY INSIDE THE COMPONENT
-  const [shareLink, setShareLink] = useState('')
-  const [confetti, setConfetti] = useState<any>(null)
-
+  const router = useRouter()
   const [names, setNames] = useState<string[]>([])
   const [input, setInput] = useState('')
-  const [pairs, setPairs] = useState<Pair[]>([])
+  const [pairs, setPairs] = useState<{ giver: string; receiver: string }[]>([])
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
   const [started, setStarted] = useState(false)
@@ -21,17 +18,27 @@ export default function SecretSanta() {
   const [locked, setLocked] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const [snow, setSnow] = useState(true)
+  const [installPrompt, setInstallPrompt] = useState<any>(null)
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const installApp = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    await installPrompt.userChoice
+    setInstallPrompt(null)
+  }
 
   const revealSound = typeof Audio !== 'undefined' ? new Audio('/sounds/reveal.mp3') : null
   const whooshSound = typeof Audio !== 'undefined' ? new Audio('/sounds/whoosh.mp3') : null
   const endSound = typeof Audio !== 'undefined' ? new Audio('/sounds/celebrate.mp3') : null
-
-  // ✅ SAFE CONFETTI LOADING
-  useEffect(() => {
-    import('canvas-confetti').then(mod => {
-      setConfetti(() => mod.default)
-    })
-  }, [])
 
   function shuffle(array: string[]): string[] {
     const arr = [...array]
@@ -74,9 +81,8 @@ export default function SecretSanta() {
     setNames(names.filter((_, idx) => idx !== i))
   }
 
-  async function generatePairs() {
+  function generatePairs() {
     if (!validateNames(names)) return
-
     let givers = shuffle([...names])
     let receivers = shuffle([...names])
 
@@ -87,24 +93,12 @@ export default function SecretSanta() {
     const result = givers.map((g, i) => ({ giver: g, receiver: receivers[i] }))
     setPairs(result)
     setStarted(true)
-
-    // ✅ SAVE GAME TO SERVER
-    const res = await fetch('/api/game', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pairs: result })
-    })
-
-    const data = await res.json()
-    const link = `${window.location.origin}/game/${data.gameId}`
-    setShareLink(link)
   }
 
   function nextPerson() {
     setRevealed(false)
     setLocked(true)
     whooshSound?.play()
-
     setTimeout(() => {
       setIndex(prev => prev + 1)
       setLocked(false)
@@ -117,23 +111,35 @@ export default function SecretSanta() {
     navigator.vibrate?.(200)
   }
 
-  // ✅ FINAL CONFETTI + CELEBRATION
   useEffect(() => {
-    if (started && index === pairs.length && pairs.length && confetti) {
+    if (started && index === pairs.length && pairs.length) {
       confetti({ particleCount: 250, spread: 180 })
       endSound?.play()
     }
-  }, [index, started, pairs, confetti, endSound])
+  }, [index, started, pairs, endSound])
 
   return (
-    <div
-      className={`min-h-screen ${
-        darkMode
-          ? 'bg-gradient-to-br from-black to-gray-900'
-          : 'bg-gradient-to-br from-red-700 to-rose-600'
-      } flex items-center justify-center p-6 overflow-hidden relative`}
-    >
-      {/* ❄️ Snow */}
+    <div className={`min-h-screen ${darkMode ? 'bg-gradient-to-br from-black to-gray-900' : 'bg-gradient-to-br from-red-700 to-rose-600'} flex items-center justify-center p-6 overflow-hidden relative`}>
+
+      {/* Top Controls */}
+      <div className="fixed top-4 right-4 flex gap-2 z-30">
+        <button onClick={() => setDarkMode(!darkMode)} className="px-3 py-1 bg-white text-black rounded">🌙</button>
+        <button onClick={() => setSnow(!snow)} className="px-3 py-1 bg-white text-black rounded">❄️</button>
+        {installPrompt && (
+          <button onClick={installApp} className="px-3 py-1 bg-green-600 text-white rounded">
+            ⬇ Install App
+          </button>
+        )}
+      </div>
+
+      {/* Join Group Button */}
+      <button
+        onClick={() => router.push('/join')}
+        className="fixed top-4 left-4 bg-white text-black px-4 py-2 rounded-full font-semibold shadow z-30"
+      >
+        Join a Group
+      </button>
+
       {snow && (
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(50)].map((_, i) => (
@@ -144,14 +150,13 @@ export default function SecretSanta() {
                 left: `${Math.random() * 100}%`,
                 width: `${Math.random() * 4 + 2}px`,
                 height: `${Math.random() * 4 + 2}px`,
-                animationDuration: `${Math.random() * 6 + 6}s`
+                animationDuration: `${Math.random() * 6 + 6}s`,
               }}
             />
           ))}
         </div>
       )}
 
-      {/* 🎅 Santa GIF */}
       <motion.img
         src="/santa.gif"
         className="absolute bottom-6 left-6 w-40 z-20"
@@ -159,27 +164,14 @@ export default function SecretSanta() {
         transition={{ repeat: Infinity, duration: 2 }}
       />
 
-      {/* Toggles */}
-      <div className="fixed top-4 right-4 space-x-3 z-30">
-        <button onClick={() => setDarkMode(!darkMode)} className="px-3 py-1 bg-white text-black rounded">
-          🌙
-        </button>
-        <button onClick={() => setSnow(!snow)} className="px-3 py-1 bg-white text-black rounded">
-          ❄️
-        </button>
-      </div>
-
-      {/* Main Card */}
       <motion.div
         animate={shake ? { x: [-8, 8, -8, 8, 0] } : {}}
         transition={{ duration: 0.3 }}
-        className={`w-full max-w-md rounded-2xl shadow-xl ${
-          darkMode ? 'bg-black text-white' : 'bg-white text-black'
-        } p-6 space-y-6 z-10`}
+        className={`w-full max-w-md rounded-2xl shadow-xl ${darkMode ? 'bg-black text-white' : 'bg-white text-black'} p-6 space-y-6 z-10`}
       >
+
         <h2 className="text-2xl font-bold text-center">🎄 Secret Santa 🎁</h2>
 
-        {/* ✅ NAME CHIPS */}
         {!started && (
           <>
             <div className="flex">
@@ -190,9 +182,7 @@ export default function SecretSanta() {
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addName()}
               />
-              <button onClick={addName} className="bg-black text-white px-4 rounded-r">
-                Add
-              </button>
+              <button onClick={addName} className="bg-black text-white px-4 rounded-r">Add</button>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -212,24 +202,12 @@ export default function SecretSanta() {
           </>
         )}
 
-        {/* ✅ SHARE LINK */}
-        {shareLink && (
-          <div className="bg-green-100 text-black p-3 rounded text-sm break-all text-center">
-            Share this link with players:
-            <br />
-            <strong>{shareLink}</strong>
-          </div>
-        )}
-
-        {/* ✅ GAME FLOW */}
         {started && index < pairs.length && (
           <>
             {!locked ? (
               <>
                 <p className="text-lg text-center">Pass phone to</p>
-                <p className="text-2xl font-bold text-center text-red-600">
-                  {pairs[index].giver}
-                </p>
+                <p className="text-2xl font-bold text-center text-red-600">{pairs[index].giver}</p>
 
                 {!revealed ? (
                   <button className="w-full bg-black text-white py-2 rounded" onClick={reveal}>
@@ -238,13 +216,8 @@ export default function SecretSanta() {
                 ) : (
                   <>
                     <p className="text-center mt-4">You gift 🎁</p>
-                    <p className="text-3xl text-center font-bold text-green-600">
-                      {pairs[index].receiver}
-                    </p>
-                    <button
-                      className="w-full bg-black text-white py-2 rounded mt-4"
-                      onClick={nextPerson}
-                    >
+                    <p className="text-3xl text-center font-bold text-green-600">{pairs[index].receiver}</p>
+                    <button className="w-full bg-black text-white py-2 rounded mt-4" onClick={nextPerson}>
                       Done → Pass Phone
                     </button>
                   </>
@@ -258,7 +231,6 @@ export default function SecretSanta() {
           </>
         )}
 
-        {/* ✅ END */}
         {started && index >= pairs.length && (
           <div className="text-center space-y-4">
             <p className="text-xl font-bold">🎉 All Done! 🎉</p>
@@ -271,9 +243,7 @@ export default function SecretSanta() {
 
       <style jsx global>{`
         @keyframes snow {
-          to {
-            transform: translateY(110vh);
-          }
+          to { transform: translateY(110vh); }
         }
         .animate-snow {
           animation-name: snow;
