@@ -85,14 +85,15 @@ export default function SecretSanta() {
         ))}
       </div>
 
-      {/* 🎅 Animated Santa (Emoji based) */}
+      {/* 🎅 Big Cute Animated Santa */}
       <motion.div
-        animate={{ y: [0, -15, 0], rotate: [0, -3, 3, 0] }}
-        transition={{ repeat: Infinity, duration: 2 }}
-        className="absolute bottom-6 left-6 text-6xl z-20"
+        animate={{ y: [0, -25, 0], rotate: [0, -6, 6, 0], scale: [1, 1.08, 1] }}
+        transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+        className="absolute bottom-4 left-4 text-8xl md:text-9xl z-20 drop-shadow-[0_20px_20px_rgba(0,0,0,0.35)]"
       >
-        🎅
+        🎅✨
       </motion.div>
+
 
       {/* 🎅 Hero Layout */}
       <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center bg-red-600 rounded-[2rem] shadow-2xl p-10 text-white font-christmas">
