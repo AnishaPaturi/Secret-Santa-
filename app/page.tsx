@@ -85,13 +85,24 @@ export default function SecretSanta() {
         ))}
       </div>
 
+      {/* 🎅 Animated Santa (Emoji based) */}
+      <motion.div
+        animate={{ y: [0, -15, 0], rotate: [0, -3, 3, 0] }}
+        transition={{ repeat: Infinity, duration: 2 }}
+        className="absolute bottom-6 left-6 text-6xl z-20"
+      >
+        🎅
+      </motion.div>
+
       {/* 🎅 Hero Layout */}
-      <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center bg-red-600 rounded-[2rem] shadow-2xl p-10 text-white">
+      <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center bg-red-600 rounded-[2rem] shadow-2xl p-10 text-white font-christmas">
 
         {/* Left */}
         <div className="space-y-6">
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-wide">Secret Santa</h1>
-          <p className="text-lg opacity-90">
+          <h1 className="text-5xl md:text-6xl font-extrabold tracking-wide drop-shadow-lg">
+            Secret Santa
+          </h1>
+          <p className="text-lg opacity-90 font-sans">
             Invite friends and family, pass the phone, and let the Christmas magic decide your gift partner.
           </p>
         </div>
@@ -100,9 +111,9 @@ export default function SecretSanta() {
         <motion.div
           animate={shake ? { x: [-12, 12, -12, 12, 0] } : {}}
           transition={{ duration: 0.3 }}
-          className="bg-white text-black rounded-2xl shadow-xl p-6 space-y-6"
+          className="bg-white text-black rounded-2xl shadow-xl p-6 space-y-6 font-sans"
         >
-          <h2 className="text-2xl font-bold text-center">🎄 Create Secret Santa 🎁</h2>
+          <h2 className="text-2xl font-bold text-center font-christmas">🎄 Create Secret Santa 🎁</h2>
 
           {!started && (
             <>
@@ -169,6 +180,12 @@ export default function SecretSanta() {
       </div>
 
       <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&display=swap');
+
+        .font-christmas {
+          font-family: 'Mountains of Christmas', cursive;
+        }
+
         @keyframes snow {
           to {
             transform: translateY(110vh);
