@@ -1,6 +1,9 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import confetti from 'canvas-confetti'
+import { QRCodeCanvas } from 'qrcode.react'
+import { motion } from 'framer-motion'
 
 export default function CreateGroupPage() {
   const router = useRouter()
@@ -11,16 +14,28 @@ export default function CreateGroupPage() {
     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
     localStorage.setItem(`group-${newCode}`, JSON.stringify([]))
     setCode(newCode)
+
+    // ✅ Success Confetti
+    confetti({
+      particleCount: 180,
+      spread: 120,
+      origin: { y: 0.6 },
+    })
   }
 
   function goToGroup() {
     router.push(`/group/${code}`)
   }
 
+  const joinLink =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/group/${code}`
+      : ''
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-700 to-rose-600 p-6 overflow-hidden relative">
 
-      {/* Snow Toggle */}
+      {/* ❄️ Snow Toggle */}
       <div className="fixed top-4 right-4 z-30">
         <button
           onClick={() => setSnow(!snow)}
@@ -30,7 +45,7 @@ export default function CreateGroupPage() {
         </button>
       </div>
 
-      {/* Snowfall */}
+      {/* ❄️ Snowfall */}
       {snow && (
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(50)].map((_, i) => (
@@ -48,8 +63,16 @@ export default function CreateGroupPage() {
         </div>
       )}
 
-      {/* Main Card */}
-      <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-4 text-center z-10 shadow-xl">
+      {/* 🎅 Animated Santa */}
+      <motion.img
+        src="/santa.gif"
+        className="absolute bottom-6 left-6 w-44 z-20"
+        animate={{ y: [0, -8, 0] }}
+        transition={{ repeat: Infinity, duration: 2 }}
+      />
+
+      {/* 🎁 Main Card */}
+      <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-5 text-center z-10 shadow-xl">
         <h1 className="text-2xl font-bold">🎄 Create a Secret Santa Group</h1>
 
         {!code && (
@@ -63,10 +86,19 @@ export default function CreateGroupPage() {
 
         {code && (
           <>
-            <p className="text-lg font-semibold mt-4">Group Code</p>
+            <p className="text-lg font-semibold">Group Code</p>
 
             <p className="text-3xl font-bold tracking-widest bg-gray-100 py-2 rounded text-black">
               {code}
+            </p>
+
+            {/* ✅ QR CODE */}
+            <div className="flex justify-center pt-2">
+              <QRCodeCanvas value={joinLink} size={160} />
+            </div>
+
+            <p className="text-sm text-gray-600">
+              Scan to join instantly
             </p>
 
             <button
@@ -78,8 +110,7 @@ export default function CreateGroupPage() {
 
             <button
               onClick={() => {
-                const link = `${window.location.origin}/group/${code}`
-                navigator.clipboard.writeText(link)
+                navigator.clipboard.writeText(joinLink)
                 alert('Group link copied!')
               }}
               className="w-full bg-blue-600 text-white py-2 rounded"
@@ -110,7 +141,6 @@ export default function CreateGroupPage() {
           animation-iteration-count: infinite;
         }
       `}</style>
-
     </div>
   )
 }
