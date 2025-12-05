@@ -3,11 +3,7 @@
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import confetti from 'canvas-confetti'
-import {
-  doc,
-  onSnapshot,
-  updateDoc,
-} from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 type Pair = { giver: string; receiver: string }
@@ -27,7 +23,17 @@ export default function GroupRoom() {
   const [myPair, setMyPair] = useState<Pair | null>(null)
   const [revealed, setRevealed] = useState(false)
 
-  // ✅ REAL-TIME FIREBASE SYNC
+  // 🔹 1) Restore my name from localStorage (per device, per group)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const saved = localStorage.getItem(`secret-santa-name-${groupCode}`)
+    if (saved) {
+      setMyName(saved)
+      setHasJoined(true)
+    }
+  }, [groupCode])
+
+  // 🔹 2) Real-time Firestore sync
   useEffect(() => {
     const unsub = onSnapshot(groupRef, snap => {
       if (!snap.exists()) return
@@ -42,28 +48,35 @@ export default function GroupRoom() {
       setPairs(dbPairs)
       setStarted(dbStarted)
 
+      // try to find my pair whenever data or myName changes
       if (dbStarted && myName.trim()) {
         const found = dbPairs.find(
           p => p.giver.toLowerCase() === myName.trim().toLowerCase()
         )
         setMyPair(found || null)
+      } else {
+        setMyPair(null)
       }
     })
 
     return () => unsub()
   }, [groupRef, myName])
 
-  // ✅ JOIN GROUP
+  // 🔹 3) Join group
   async function joinGroup() {
     const name = myName.trim()
-
     if (!name) {
       alert('Please enter your name')
       return
     }
 
+    if (started) {
+      alert('Game already started. Ask the host to create a new group.')
+      return
+    }
+
     if (members.some(m => m.toLowerCase() === name.toLowerCase())) {
-      alert('This name already exists!')
+      alert('This name already exists in the group!')
       return
     }
 
@@ -71,10 +84,14 @@ export default function GroupRoom() {
       members: [...members, name],
     })
 
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`secret-santa-name-${groupCode}`, name)
+    }
+
     setHasJoined(true)
   }
 
-  // ✅ SHUFFLE
+  // 🔹 4) Shuffle helper
   function shuffle(arr: string[]) {
     const a = [...arr]
     for (let i = a.length - 1; i > 0; i--) {
@@ -84,8 +101,10 @@ export default function GroupRoom() {
     return a
   }
 
-  // ✅ START GAME (ONLY ONCE)
+  // 🔹 5) Start game once (host or anyone)
   async function startGame() {
+    if (started) return
+
     if (members.length < 2) {
       alert('Need at least 2 members!')
       return
@@ -94,6 +113,7 @@ export default function GroupRoom() {
     let givers = shuffle([...members])
     let receivers = shuffle([...members])
 
+    // avoid self-pairing
     while (givers.some((g, i) => g === receivers[i])) {
       receivers = shuffle([...members])
     }
@@ -111,6 +131,7 @@ export default function GroupRoom() {
     confetti({ particleCount: 200, spread: 160 })
   }
 
+  // ---------------- UI ----------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-700 to-rose-600 flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl p-8 w-full max-w-md space-y-6 shadow-xl text-black">
@@ -119,8 +140,8 @@ export default function GroupRoom() {
           🎁 Group: {groupCode}
         </h2>
 
-        {/* ✅ BEFORE JOIN */}
-        {!hasJoined && !started && (
+        {/* 🟢 JOIN SECTION (only before game start, before joined) */}
+        {!started && !hasJoined && (
           <>
             <input
               className="w-full border p-2 rounded"
@@ -144,7 +165,7 @@ export default function GroupRoom() {
           </>
         )}
 
-        {/* ✅ MEMBER LIST (VISIBLE TO ALL BEFORE START) */}
+        {/* 🟢 MEMBER LIST (visible to everyone before start) */}
         {!started && members.length > 0 && (
           <div className="flex flex-wrap gap-2 justify-center">
             {members.map((m, i) => (
@@ -158,7 +179,7 @@ export default function GroupRoom() {
           </div>
         )}
 
-        {/* ✅ START BUTTON (ANYONE CAN START ONCE) */}
+        {/* 🟢 START BUTTON (anyone, only before started) */}
         {!started && members.length >= 2 && (
           <button
             onClick={startGame}
@@ -168,7 +189,7 @@ export default function GroupRoom() {
           </button>
         )}
 
-        {/* ✅ PRIVATE REVEAL — ONLY YOUR RESULT */}
+        {/* 🔴 GAME STARTED – PRIVATE RESULT */}
         {started && myPair && (
           <>
             {!revealed ? (
@@ -189,10 +210,11 @@ export default function GroupRoom() {
           </>
         )}
 
-        {/* ✅ JOINED TOO LATE / NAME MISMATCH */}
-        {started && hasJoined && !myPair && (
-          <p className="text-center text-gray-500">
-            You joined after the game started.
+        {/* 🟡 Started but this device has no saved name / no pair */}
+        {started && !myPair && (
+          <p className="text-center text-gray-500 text-sm">
+            Game has started. Make sure you joined this group earlier from
+            this device with the same name, or ask the host to create a new group.
           </p>
         )}
       </div>
