@@ -16,15 +16,14 @@ export default function GroupRoom() {
   const { code } = useParams()
   const groupRef = doc(db, 'groups', String(code))
 
-  const [name, setName] = useState('')
+  const [myName, setMyName] = useState('')
   const [members, setMembers] = useState<string[]>([])
   const [pairs, setPairs] = useState<
     { giver: string; receiver: string }[]
   >([])
   const [started, setStarted] = useState(false)
-  const [index, setIndex] = useState(0)
+  const [myPair, setMyPair] = useState<{ giver: string; receiver: string } | null>(null)
   const [revealed, setRevealed] = useState(false)
-  const [locked, setLocked] = useState(false)
 
   // ✅ REAL-TIME SYNC
   useEffect(() => {
@@ -34,23 +33,29 @@ export default function GroupRoom() {
         setMembers(data.members || [])
         setPairs(data.pairs || [])
         setStarted(data.started || false)
+
+        if (data.started && myName) {
+          const found = data.pairs?.find(
+            (p: any) => p.giver === myName
+          )
+          setMyPair(found || null)
+        }
       }
     })
     return () => unsub()
-  }, [groupRef])
+  }, [groupRef, myName])
 
+  // ✅ JOIN GROUP (PRIVATE IDENTITY)
   async function joinGroup() {
-    if (!name.trim()) return
-    if (members.includes(name.trim())) {
+    if (!myName.trim()) return
+    if (members.includes(myName.trim())) {
       alert('Name already exists!')
       return
     }
 
     await updateDoc(groupRef, {
-      members: [...members, name.trim()],
+      members: [...members, myName.trim()],
     })
-
-    setName('')
   }
 
   function shuffle(array: string[]) {
@@ -62,9 +67,10 @@ export default function GroupRoom() {
     return arr
   }
 
+  // ✅ ONLY ONE PERSON NEEDS TO START
   async function startGame() {
     if (members.length < 2) {
-      alert('Need at least 2 members to start!')
+      alert('Need at least 2 members!')
       return
     }
 
@@ -85,122 +91,90 @@ export default function GroupRoom() {
       started: true,
     })
 
-    confetti({ particleCount: 200, spread: 160 })
-  }
-
-  function nextPerson() {
-    setRevealed(false)
-    setLocked(true)
-
-    setTimeout(() => {
-      setIndex(prev => prev + 1)
-      setLocked(false)
-    }, 1000)
+    confetti({ particleCount: 180, spread: 160 })
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-700 to-rose-600 flex items-center justify-center p-6">
-      <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-5 shadow-xl">
+      <div className="bg-white rounded-2xl p-8 w-full max-w-md space-y-5 shadow-xl text-black">
 
         <h2 className="text-2xl font-bold text-center">
           🎁 Group: {code}
         </h2>
 
-        {/* ✅ BEFORE GAME START */}
-        {!started && (
+        {/* ✅ BEFORE JOIN */}
+        {!myName && (
           <>
-            <div className="flex">
-              <input
-                className="flex-1 border p-2 rounded-l"
-                placeholder="Enter your name"
-                value={name}
-                onChange={e => setName(e.target.value)}
-              />
-              <button
-                onClick={joinGroup}
-                className="bg-black text-white px-4 rounded-r"
-              >
-                Join
-              </button>
-            </div>
+            <input
+              className="w-full border p-2 rounded"
+              placeholder="Enter your name"
+              onChange={e => setMyName(e.target.value)}
+            />
+
+            <button
+              onClick={joinGroup}
+              className="w-full bg-black text-white py-2 rounded"
+            >
+              Join Group
+            </button>
 
             {members.length === 0 && (
               <p className="text-center text-gray-500">
-                No members added yet
+                No members yet
               </p>
             )}
-
-            <div className="flex flex-wrap gap-2">
-              {members.map((m, i) => (
-                <div
-                  key={i}
-                  className="bg-red-600 text-white px-3 py-1 rounded-full"
-                >
-                  {m}
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={startGame}
-              className="w-full bg-green-600 text-white py-2 rounded"
-            >
-              🎄 Start Secret Santa
-            </button>
           </>
         )}
 
-        {/* ✅ GAME STARTED */}
-        {started && index < pairs.length && (
-          <>
-            {!locked ? (
-              <>
-                <p className="text-lg text-center">Pass phone to</p>
-                <p className="text-2xl font-bold text-center text-red-600">
-                  {pairs[index].giver}
-                </p>
-
-                {!revealed ? (
-                  <button
-                    className="w-full bg-black text-white py-2 rounded"
-                    onClick={() => setRevealed(true)}
-                  >
-                    Reveal My Secret Santa
-                  </button>
-                ) : (
-                  <>
-                    <p className="text-center mt-4">You gift 🎁</p>
-                    <p className="text-3xl text-center font-bold text-green-600">
-                      {pairs[index].receiver}
-                    </p>
-                    <button
-                      className="w-full bg-black text-white py-2 rounded mt-4"
-                      onClick={nextPerson}
-                    >
-                      Done → Pass Phone
-                    </button>
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="bg-black/80 text-white text-center py-10 rounded">
-                Pass phone to next person 🔒
+        {/* ✅ MEMBER LIST (VISIBLE TO ALL) */}
+        {!started && members.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center">
+            {members.map((m, i) => (
+              <div
+                key={i}
+                className="bg-red-600 text-white px-3 py-1 rounded-full"
+              >
+                {m}
               </div>
+            ))}
+          </div>
+        )}
+
+        {/* ✅ START BUTTON (ONE PERSON CAN START) */}
+        {!started && members.length >= 2 && (
+          <button
+            onClick={startGame}
+            className="w-full bg-green-600 text-white py-2 rounded"
+          >
+            🎄 Start Secret Santa
+          </button>
+        )}
+
+        {/* ✅ AFTER GAME START — PRIVATE VIEW */}
+        {started && myPair && (
+          <>
+            {!revealed ? (
+              <button
+                className="w-full bg-black text-white py-2 rounded"
+                onClick={() => setRevealed(true)}
+              >
+                Reveal My Secret Santa
+              </button>
+            ) : (
+              <>
+                <p className="text-center mt-4">You gift 🎁</p>
+                <p className="text-3xl text-center font-bold text-green-600">
+                  {myPair.receiver}
+                </p>
+              </>
             )}
           </>
         )}
 
-        {/* ✅ GAME FINISHED */}
-        {started && index >= pairs.length && (
-          <div className="text-center space-y-4">
-            <p className="text-xl font-bold">🎉 All Done! 🎉</p>
-            <button
-              className="w-full bg-black text-white py-2 rounded"
-              onClick={() => location.reload()}
-            >
-              Restart
-            </button>
-          </div>
+        {started && !myPair && (
+          <p className="text-center text-gray-500">
+            Waiting for your name to be added before game start...
+          </p>
         )}
       </div>
     </div>
