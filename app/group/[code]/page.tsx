@@ -18,8 +18,6 @@ export default function GroupRoom() {
 
   function joinGroup() {
     if (!name.trim()) return
-
-    // prevent duplicates
     if (members.includes(name.trim())) {
       alert('Name already exists!')
       return
@@ -65,7 +63,7 @@ export default function GroupRoom() {
         </div>
 
         <p className="text-sm text-gray-600 text-center">
-          Group members are stored on this device (local demo mode).
+          Group members stored in local storage. Works on this browser only.
         </p>
       </div>
     </div>
