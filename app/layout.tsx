@@ -5,12 +5,12 @@ export const metadata: Metadata = {
   title: 'Secret Santa – Christmas Gift Matcher',
   description:
     'Create a magical Secret Santa game, pass the phone, and let everyone discover their gift buddy in a private, fun way.',
-  metadataBase: new URL('secret-santa-two.vercel.app'),
+  metadataBase: new URL('https://secret-santa-two.vercel.app'),
   openGraph: {
     title: 'Secret Santa – Make Your Christmas Gift Swap Magical 🎄',
     description:
       'Invite friends, add names, and let this Secret Santa app privately assign gift partners with festive vibes, snow, sounds and confetti.',
-    url: 'secret-santa-two.vercel.app',
+    url: 'https://secret-santa-two.vercel.app',
     siteName: 'Secret Santa',
     images: [
       {
