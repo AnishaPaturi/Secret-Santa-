@@ -2,13 +2,11 @@
 
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import {
   doc,
   onSnapshot,
   updateDoc,
-  getDoc,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
@@ -17,37 +15,42 @@ export default function GroupRoom() {
   const groupRef = doc(db, 'groups', String(code))
 
   const [myName, setMyName] = useState('')
+  const [hasJoined, setHasJoined] = useState(false)
+
   const [members, setMembers] = useState<string[]>([])
-  const [pairs, setPairs] = useState<
-    { giver: string; receiver: string }[]
-  >([])
+  const [pairs, setPairs] = useState<{ giver: string; receiver: string }[]>([])
   const [started, setStarted] = useState(false)
+
   const [myPair, setMyPair] = useState<{ giver: string; receiver: string } | null>(null)
   const [revealed, setRevealed] = useState(false)
 
-  // ✅ REAL-TIME SYNC
+  // ✅ REALTIME FIREBASE SYNC
   useEffect(() => {
     const unsub = onSnapshot(groupRef, snap => {
-      if (snap.exists()) {
-        const data = snap.data()
-        setMembers(data.members || [])
-        setPairs(data.pairs || [])
-        setStarted(data.started || false)
+      if (!snap.exists()) return
 
-        if (data.started && myName) {
-          const found = data.pairs?.find(
-            (p: any) => p.giver === myName
-          )
-          setMyPair(found || null)
-        }
+      const data = snap.data()
+
+      setMembers(data.members || [])
+      setPairs(data.pairs || [])
+      setStarted(data.started || false)
+
+      if (data.started && myName) {
+        const found = data.pairs?.find((p: any) => p.giver === myName)
+        setMyPair(found || null)
       }
     })
+
     return () => unsub()
   }, [groupRef, myName])
 
-  // ✅ JOIN GROUP (PRIVATE IDENTITY)
+  // ✅ JOIN GROUP
   async function joinGroup() {
-    if (!myName.trim()) return
+    if (!myName.trim()) {
+      alert('Please enter your name')
+      return
+    }
+
     if (members.includes(myName.trim())) {
       alert('Name already exists!')
       return
@@ -56,8 +59,11 @@ export default function GroupRoom() {
     await updateDoc(groupRef, {
       members: [...members, myName.trim()],
     })
+
+    setHasJoined(true)
   }
 
+  // ✅ SHUFFLE LOGIC
   function shuffle(array: string[]) {
     const arr = [...array]
     for (let i = arr.length - 1; i > 0; i--) {
@@ -67,7 +73,7 @@ export default function GroupRoom() {
     return arr
   }
 
-  // ✅ ONLY ONE PERSON NEEDS TO START
+  // ✅ START GAME (ANY ONE PERSON)
   async function startGame() {
     if (members.length < 2) {
       alert('Need at least 2 members!')
@@ -91,7 +97,7 @@ export default function GroupRoom() {
       started: true,
     })
 
-    confetti({ particleCount: 180, spread: 160 })
+    confetti({ particleCount: 200, spread: 160 })
   }
 
   return (
@@ -103,11 +109,12 @@ export default function GroupRoom() {
         </h2>
 
         {/* ✅ BEFORE JOIN */}
-        {!myName && (
+        {!hasJoined && !started && (
           <>
             <input
               className="w-full border p-2 rounded"
               placeholder="Enter your name"
+              value={myName}
               onChange={e => setMyName(e.target.value)}
             />
 
@@ -126,7 +133,7 @@ export default function GroupRoom() {
           </>
         )}
 
-        {/* ✅ MEMBER LIST (VISIBLE TO ALL) */}
+        {/* ✅ MEMBER LIST (VISIBLE TO ALL BEFORE START) */}
         {!started && members.length > 0 && (
           <div className="flex flex-wrap gap-2 justify-center">
             {members.map((m, i) => (
@@ -140,7 +147,7 @@ export default function GroupRoom() {
           </div>
         )}
 
-        {/* ✅ START BUTTON (ONE PERSON CAN START) */}
+        {/* ✅ START BUTTON */}
         {!started && members.length >= 2 && (
           <button
             onClick={startGame}
@@ -150,7 +157,7 @@ export default function GroupRoom() {
           </button>
         )}
 
-        {/* ✅ AFTER GAME START — PRIVATE VIEW */}
+        {/* ✅ PRIVATE REVEAL — ONLY YOUR RESULT */}
         {started && myPair && (
           <>
             {!revealed ? (
