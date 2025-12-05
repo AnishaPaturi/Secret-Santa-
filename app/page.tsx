@@ -1,16 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import confetti from 'canvas-confetti'
 
 export default function SecretSanta() {
-  const [names, setNames] = useState('')
+  const [names, setNames] = useState<string[]>([])
+  const [input, setInput] = useState('')
   const [pairs, setPairs] = useState<{ giver: string; receiver: string }[]>([])
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
   const [started, setStarted] = useState(false)
   const [error, setError] = useState('')
   const [shake, setShake] = useState(false)
+  const [locked, setLocked] = useState(false)
+  const [darkMode, setDarkMode] = useState(false)
+  const [snow, setSnow] = useState(true)
+
+  const revealSound = typeof Audio !== 'undefined' ? new Audio('/sounds/reveal.mp3') : null
+  const whooshSound = typeof Audio !== 'undefined' ? new Audio('/sounds/whoosh.mp3') : null
+  const endSound = typeof Audio !== 'undefined' ? new Audio('/sounds/celebrate.mp3') : null
 
   function shuffle(array: string[]): string[] {
     const arr = [...array]
@@ -21,7 +30,6 @@ export default function SecretSanta() {
     return arr
   }
 
-
   function validateNames(list: string[]): boolean {
     const lower = list.map(n => n.toLowerCase())
     const unique = new Set(lower)
@@ -29,14 +37,14 @@ export default function SecretSanta() {
     if (list.length < 2) {
       setError('Add at least 2 names 🎅')
       setShake(true)
-      setTimeout(() => setShake(false), 500)
+      setTimeout(() => setShake(false), 400)
       return false
     }
 
     if (unique.size !== list.length) {
       setError('Duplicate names found ❌')
       setShake(true)
-      setTimeout(() => setShake(false), 500)
+      setTimeout(() => setShake(false), 400)
       return false
     }
 
@@ -44,14 +52,23 @@ export default function SecretSanta() {
     return true
   }
 
-  function generatePairs() {
-    let list = names.split(',').map(n => n.trim()).filter(Boolean)
-    if (!validateNames(list)) return
+  function addName() {
+    if (!input.trim()) return
+    setNames([...names, input.trim()])
+    setInput('')
+  }
 
-    let givers = shuffle([...list])
-    let receivers = shuffle([...list])
+  function removeName(i: number) {
+    setNames(names.filter((_, idx) => idx !== i))
+  }
+
+  function generatePairs() {
+    if (!validateNames(names)) return
+    let givers = shuffle([...names])
+    let receivers = shuffle([...names])
+
     while (givers.some((g, i) => g === receivers[i])) {
-      receivers = shuffle([...list])
+      receivers = shuffle([...names])
     }
 
     const result = givers.map((g, i) => ({ giver: g, receiver: receivers[i] }))
@@ -61,138 +78,139 @@ export default function SecretSanta() {
 
   function nextPerson() {
     setRevealed(false)
-    setIndex(prev => prev + 1)
+    setLocked(true)
+    whooshSound?.play()
+    setTimeout(() => {
+      setIndex(prev => prev + 1)
+      setLocked(false)
+    }, 1200)
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && e.ctrlKey) generatePairs()
+  function reveal() {
+    setRevealed(true)
+    revealSound?.play()
+    navigator.vibrate?.(200)
   }
+
+  useEffect(() => {
+    if (started && index === pairs.length && pairs.length) {
+      confetti({ particleCount: 250, spread: 180 })
+      endSound?.play()
+    }
+  }, [index, started, pairs, endSound])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-700 via-red-600 to-rose-600 flex items-center justify-center p-6 overflow-hidden relative">
+    <div className={`min-h-screen ${darkMode ? 'bg-gradient-to-br from-black to-gray-900' : 'bg-gradient-to-br from-red-700 to-rose-600'} flex items-center justify-center p-6 overflow-hidden relative`}>
 
-      {/* ❄️ Snow */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(50)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute top-[-10px] bg-white rounded-full opacity-80 animate-snow"
-            style={{
-              left: `${Math.random() * 100}%`,
-              width: `${Math.random() * 4 + 2}px`,
-              height: `${Math.random() * 4 + 2}px`,
-              animationDuration: `${Math.random() * 6 + 6}s`,
-            }}
-          />
-        ))}
+      {snow && (
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute top-[-10px] bg-white rounded-full opacity-80 animate-snow"
+              style={{
+                left: `${Math.random() * 100}%`,
+                width: `${Math.random() * 4 + 2}px`,
+                height: `${Math.random() * 4 + 2}px`,
+                animationDuration: `${Math.random() * 6 + 6}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <motion.img
+        src="/santa.gif"
+        className="absolute bottom-6 left-6 w-40 z-20"
+        animate={{ x: [0, 20, 0] }}
+        transition={{ repeat: Infinity, duration: 2 }}
+      />
+
+      <div className="fixed top-4 right-4 space-x-3 z-30">
+        <button onClick={() => setDarkMode(!darkMode)} className="px-3 py-1 bg-white text-black rounded">🌙</button>
+        <button onClick={() => setSnow(!snow)} className="px-3 py-1 bg-white text-black rounded">❄️</button>
       </div>
 
-      {/* 🎅 Big Cute Animated Santa */}
       <motion.div
-        animate={{ y: [0, -25, 0], rotate: [0, -6, 6, 0], scale: [1, 1.08, 1] }}
-        transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-        className="absolute bottom-4 left-4 text-8xl md:text-9xl z-20 drop-shadow-[0_20px_20px_rgba(0,0,0,0.35)]"
+        animate={shake ? { x: [-8, 8, -8, 8, 0] } : {}}
+        transition={{ duration: 0.3 }}
+        className={`w-full max-w-md rounded-2xl shadow-xl ${darkMode ? 'bg-black text-white' : 'bg-white text-black'} p-6 space-y-6 z-10`}
       >
-        🎅✨
+
+        <h2 className="text-2xl font-bold text-center">🎄 Secret Santa 🎁</h2>
+
+        {!started && (
+          <>
+            <div className="flex">
+              <input
+                className="flex-1 border p-2 rounded-l text-black"
+                placeholder="Type name"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addName()}
+              />
+              <button onClick={addName} className="bg-black text-white px-4 rounded-r">Add</button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {names.map((n, i) => (
+                <div key={i} className="bg-red-600 text-white px-3 py-1 rounded-full flex items-center gap-2">
+                  {n}
+                  <button onClick={() => removeName(i)}>❌</button>
+                </div>
+              ))}
+            </div>
+
+            {error && <p className="text-red-500 text-center">{error}</p>}
+
+            <button className="w-full bg-black text-white py-2 rounded" onClick={generatePairs}>
+              Start Assignment
+            </button>
+          </>
+        )}
+
+        {started && index < pairs.length && (
+          <>
+            {!locked ? (
+              <>
+                <p className="text-lg text-center">Pass phone to</p>
+                <p className="text-2xl font-bold text-center text-red-600">{pairs[index].giver}</p>
+
+                {!revealed ? (
+                  <button className="w-full bg-black text-white py-2 rounded" onClick={reveal}>
+                    Reveal My Secret Santa
+                  </button>
+                ) : (
+                  <>
+                    <p className="text-center mt-4">You gift 🎁</p>
+                    <p className="text-3xl text-center font-bold text-green-600">{pairs[index].receiver}</p>
+                    <button className="w-full bg-black text-white py-2 rounded mt-4" onClick={nextPerson}>
+                      Done → Pass Phone
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center text-white text-xl rounded-2xl">
+                Pass phone to next person 🔒
+              </div>
+            )}
+          </>
+        )}
+
+        {started && index >= pairs.length && (
+          <div className="text-center space-y-4">
+            <p className="text-xl font-bold">🎉 All Done! 🎉</p>
+            <button className="w-full bg-black text-white py-2 rounded" onClick={() => location.reload()}>
+              Restart
+            </button>
+          </div>
+        )}
       </motion.div>
 
-
-      {/* 🎅 Hero Layout */}
-      <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center bg-red-600 rounded-[2rem] shadow-2xl p-10 text-white font-christmas">
-
-        {/* Left */}
-        <div className="space-y-6">
-          <h1 className="text-5xl md:text-6xl font-extrabold tracking-wide drop-shadow-lg">
-            Secret Santa
-          </h1>
-          <p className="text-lg opacity-90 font-sans">
-            Invite friends and family, pass the phone, and let the Christmas magic decide your gift partner.
-          </p>
-        </div>
-
-        {/* Right Card */}
-        <motion.div
-          animate={shake ? { x: [-12, 12, -12, 12, 0] } : {}}
-          transition={{ duration: 0.3 }}
-          className="bg-white text-black rounded-2xl shadow-xl p-6 space-y-6 font-sans"
-        >
-          <h2 className="text-2xl font-bold text-center font-christmas">🎄 Create Secret Santa 🎁</h2>
-
-          {!started && (
-            <>
-              <textarea
-                className="w-full border-2 border-black p-3 rounded-xl text-black bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
-                rows={4}
-                placeholder="Enter names comma separated"
-                value={names}
-                onKeyDown={handleKeyDown}
-                onChange={e => setNames(e.target.value)}
-              />
-
-              {error && <p className="text-red-600 text-sm font-semibold text-center">{error}</p>}
-
-              <button
-                className="w-full bg-black text-white rounded-xl py-3 font-semibold"
-                onClick={generatePairs}
-              >
-                Start Assignment
-              </button>
-              <p className="text-xs text-center text-gray-500">Ctrl + Enter to start</p>
-            </>
-          )}
-
-          {started && index < pairs.length && (
-            <>
-              <div className="text-center">
-                <p className="text-lg font-semibold">Pass the phone to:</p>
-                <p className="text-2xl font-bold text-red-600">{pairs[index].giver}</p>
-              </div>
-
-              {!revealed ? (
-                <button className="w-full bg-black text-white rounded-xl py-3" onClick={() => setRevealed(true)}>
-                  Reveal My Secret Santa
-                </button>
-              ) : (
-                <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="text-center space-y-4"
-                >
-                  <p className="text-xl">You have to gift 🎁</p>
-                  <p className="text-3xl font-bold text-green-600">{pairs[index].receiver}</p>
-                  <button className="w-full bg-black text-white rounded-xl py-3" onClick={nextPerson}>
-                    Done → Pass Phone
-                  </button>
-                </motion.div>
-              )}
-            </>
-          )}
-
-          {started && index >= pairs.length && (
-            <div className="text-center space-y-4">
-              <p className="text-xl font-bold">🎉 All Done! 🎉</p>
-              <button
-                className="w-full bg-black text-white rounded-xl py-3"
-                onClick={() => location.reload()}
-              >
-                Restart
-              </button>
-            </div>
-          )}
-        </motion.div>
-      </div>
-
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&display=swap');
-
-        .font-christmas {
-          font-family: 'Mountains of Christmas', cursive;
-        }
-
         @keyframes snow {
-          to {
-            transform: translateY(110vh);
-          }
+          to { transform: translateY(110vh); }
         }
         .animate-snow {
           animation-name: snow;
