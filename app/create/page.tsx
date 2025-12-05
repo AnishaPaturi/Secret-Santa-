@@ -5,13 +5,11 @@ import { useState } from 'react'
 export default function CreateGroupPage() {
   const router = useRouter()
   const [code, setCode] = useState('')
+  const [snow, setSnow] = useState(true)
 
   function createGroup() {
     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-
-    // Save empty group in localStorage
     localStorage.setItem(`group-${newCode}`, JSON.stringify([]))
-
     setCode(newCode)
   }
 
@@ -20,8 +18,38 @@ export default function CreateGroupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-red-700 p-6">
-      <div className="bg-white rounded-2xl p-8 w-full max-w-md space-y-4 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-700 to-rose-600 p-6 overflow-hidden relative">
+
+      {/* Snow Toggle */}
+      <div className="fixed top-4 right-4 z-30">
+        <button
+          onClick={() => setSnow(!snow)}
+          className="px-3 py-1 bg-white text-black rounded"
+        >
+          ❄️
+        </button>
+      </div>
+
+      {/* Snowfall */}
+      {snow && (
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute top-[-10px] bg-white rounded-full opacity-80 animate-snow"
+              style={{
+                left: `${Math.random() * 100}%`,
+                width: `${Math.random() * 4 + 2}px`,
+                height: `${Math.random() * 4 + 2}px`,
+                animationDuration: `${Math.random() * 6 + 6}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Main Card */}
+      <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-4 text-center z-10 shadow-xl">
         <h1 className="text-2xl font-bold">🎄 Create a Secret Santa Group</h1>
 
         {!code && (
@@ -36,7 +64,8 @@ export default function CreateGroupPage() {
         {code && (
           <>
             <p className="text-lg font-semibold mt-4">Group Code</p>
-            <p className="text-3xl font-bold tracking-widest bg-gray-100 py-2 rounded">
+
+            <p className="text-3xl font-bold tracking-widest bg-gray-100 py-2 rounded text-black">
               {code}
             </p>
 
@@ -67,6 +96,21 @@ export default function CreateGroupPage() {
           ← Back to Home
         </button>
       </div>
+
+      {/* ✅ Snow Animation CSS */}
+      <style jsx global>{`
+        @keyframes snow {
+          to {
+            transform: translateY(110vh);
+          }
+        }
+        .animate-snow {
+          animation-name: snow;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
+        }
+      `}</style>
+
     </div>
   )
 }
