@@ -5,20 +5,22 @@ import { motion } from 'framer-motion'
 
 export default function SecretSanta() {
   const [names, setNames] = useState('')
-  const [pairs, setPairs] = useState([])
+  const [pairs, setPairs] = useState<{ giver: string; receiver: string }[]>([])
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
   const [started, setStarted] = useState(false)
   const [error, setError] = useState('')
   const [shake, setShake] = useState(false)
 
-  function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
+  function shuffle(array: string[]): string[] {
+    const arr = [...array]
+    for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[array[i], array[j]] = [array[j], array[i]]
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
     }
-    return array
+    return arr
   }
+
 
   function validateNames(list) {
     const lower = list.map(n => n.toLowerCase())
@@ -62,7 +64,7 @@ export default function SecretSanta() {
     setIndex(prev => prev + 1)
   }
 
-  function handleKeyDown(e) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && e.ctrlKey) generatePairs()
   }
 
