@@ -35,10 +35,12 @@ export default function GroupRoom() {
       setPairs(data.pairs || [])
       setStarted(data.started || false)
 
-      if (data.started && myName) {
-        const found = data.pairs?.find((p: any) => p.giver === myName)
+      if (data.started && myName.trim()) {
+        const found = data.pairs?.find(
+            (p: any) => p.giver.toLowerCase() === myName.trim().toLowerCase()
+        )
         setMyPair(found || null)
-      }
+        }
     })
 
     return () => unsub()
@@ -51,7 +53,7 @@ export default function GroupRoom() {
       return
     }
 
-    if (members.includes(myName.trim())) {
+    if (members.map(m => m.toLowerCase()).includes(myName.trim().toLowerCase())) {
       alert('Name already exists!')
       return
     }
