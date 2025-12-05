@@ -185,7 +185,8 @@ export default function SecretSanta() {
           <>
             <div className="flex">
               <input
-                className="flex-1 border p-2 rounded-l text-black"
+                className={`flex-1 border p-2 rounded-l 
+                  ${darkMode ? 'bg-gray-900 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-black border-black'}`}
                 placeholder="Type name"
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -196,14 +197,22 @@ export default function SecretSanta() {
 
             <div className="flex flex-wrap gap-2">
               {names.map((n, i) => (
-                <div key={i} className="bg-red-600 text-white px-3 py-1 rounded-full flex items-center gap-2">
+                <div
+                  key={i}
+                  className={`px-3 py-1 rounded-full flex items-center gap-2 
+                    ${darkMode ? 'bg-red-500 text-white' : 'bg-red-600 text-white'}`}
+                >
                   {n}
                   <button onClick={() => removeName(i)}>❌</button>
                 </div>
               ))}
             </div>
 
-            {error && <p className="text-red-500 text-center">{error}</p>}
+            {error && (
+              <p className={`text-center ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
+                {error}
+              </p>
+            )}
 
             <button className="w-full bg-black text-white py-2 rounded" onClick={generatePairs}>
               Start Assignment
