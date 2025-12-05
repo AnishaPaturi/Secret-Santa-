@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import confetti from 'canvas-confetti'
-
+let confetti: any = null
+if (typeof window !== 'undefined') {
+  import('canvas-confetti').then(mod => {
+    confetti = mod.default
+  })
+}
 export default function SecretSanta() {
   const [names, setNames] = useState<string[]>([])
   const [input, setInput] = useState('')
@@ -93,11 +97,12 @@ export default function SecretSanta() {
   }
 
   useEffect(() => {
-    if (started && index === pairs.length && pairs.length) {
+    if (started && index === pairs.length && pairs.length && confetti) {
       confetti({ particleCount: 250, spread: 180 })
       endSound?.play()
     }
-  }, [index, started, pairs, endSound])
+    }, [index, started, pairs])
+
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gradient-to-br from-black to-gray-900' : 'bg-gradient-to-br from-red-700 to-rose-600'} flex items-center justify-center p-6 overflow-hidden relative`}>
