@@ -1,6 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 export default function JoinPage() {
   const router = useRouter()
@@ -48,6 +49,14 @@ export default function JoinPage() {
           ))}
         </div>
       )}
+      {/* 🎅 Animated Santa */}
+        <motion.img
+        src="/santa.gif"
+        className="absolute bottom-6 left-6 w-40 z-20"
+        animate={{ y: [0, -10, 0] }}
+        transition={{ repeat: Infinity, duration: 2 }}
+        />
+
 
       {/* Main Card */}
       <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-4 text-center z-10">
