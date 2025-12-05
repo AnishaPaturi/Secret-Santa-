@@ -22,7 +22,7 @@ export default function SecretSanta() {
   }
 
 
-  function validateNames(list) {
+  function validateNames(list: string[]): boolean {
     const lower = list.map(n => n.toLowerCase())
     const unique = new Set(lower)
 
