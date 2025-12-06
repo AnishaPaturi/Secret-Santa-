@@ -104,16 +104,17 @@ createdAt: Timestamp
 
 ## 🛠️ Installation & Setup
 
-### 1️⃣ Clone the Repository
+
 
 ```bash
+### 1️⃣ Clone the Repository
   git clone https://github.com/AnishaPaturi/Secret-Santa-.git
   cd Secret-Santa-
 
 
-2️⃣ Install Dependencies : npm install
+### 2️⃣ Install Dependencies : npm install
 
-3️⃣ Add Firebase Configuration
+### 3️⃣ Add Firebase Configuration
   Create this file: lib/firebase.ts
     Add your Firebase config:
       import { initializeApp } from 'firebase/app'
@@ -132,19 +133,19 @@ createdAt: Timestamp
       export const db = getFirestore(app)
 
 
-4️⃣ Run Locally
+### 4️⃣ Run Locally
   npm run dev
   Open in browser:
   http://localhost:3000
 
-🔐 Privacy & Security
+### 🔐 Privacy & Security
   No login/authentication required
   Each user can only see their own Secret Santa
   Host can only start the game
   All data is synced safely using Firestore
   No personal data is stored permanently
 
-🌟 Future Enhancements
+### 🌟 Future Enhancements
   Email invitations
   Personal wish lists
   Budget limit settings
@@ -152,12 +153,12 @@ createdAt: Timestamp
   Group reset without recreation
   Admin transfer feature
 
-🧑‍🎓 Author: 
+### 🧑‍🎓 Author: 
   Anisha Paturi
   Engineering Student | Full-Stack Developer
   GitHub: https://github.com/AnishaPaturi
 
-🏁 License
+### 🏁 License
   This project is open-source and free to use for learning and personal use.
   
   ---
