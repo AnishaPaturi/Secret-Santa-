@@ -9,16 +9,31 @@ import { db } from '@/lib/firebase'
 
 export default function CreateGroupPage() {
   const router = useRouter()
+
   const [code, setCode] = useState('')
   const [snow, setSnow] = useState(true)
+  const [hostName, setHostName] = useState('')
 
   async function createGroup() {
+    if (!hostName.trim()) {
+      alert('Please enter your name first (Host)')
+      return
+    }
+
     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
+    // ✅ CREATE GROUP WITH FULL STRUCTURE
     await setDoc(doc(db, 'groups', newCode), {
-      members: [],
+      admin: hostName.trim(),          // ✅ HOST
+      members: [hostName.trim()],      // ✅ HOST ADDED AS FIRST MEMBER
+      pairs: [],                       // ✅ REQUIRED FOR GAME
+      started: false,                  // ✅ REQUIRED FOR GAME
       createdAt: new Date(),
     })
+
+    // ✅ STORE LOCALLY FOR ADMIN PRIVILEGES
+    localStorage.setItem(`secret-santa-name-${newCode}`, hostName.trim())
+    localStorage.setItem(`secret-santa-admin-${newCode}`, 'true')
 
     setCode(newCode)
 
@@ -82,12 +97,22 @@ export default function CreateGroupPage() {
         <h1 className="text-2xl font-bold">🎄 Create a Secret Santa Group</h1>
 
         {!code && (
-          <button
-            onClick={createGroup}
-            className="w-full bg-black text-white py-2 rounded"
-          >
-            Generate Group Code
-          </button>
+          <>
+            {/* ✅ HOST NAME INPUT (REQUIRED) */}
+            <input
+              className="w-full border p-2 rounded"
+              placeholder="Enter your name (Host)"
+              value={hostName}
+              onChange={e => setHostName(e.target.value)}
+            />
+
+            <button
+              onClick={createGroup}
+              className="w-full bg-black text-white py-2 rounded"
+            >
+              Generate Group Code
+            </button>
+          </>
         )}
 
         {code && (
