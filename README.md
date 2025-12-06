@@ -110,6 +110,7 @@ createdAt: Timestamp
   git clone https://github.com/AnishaPaturi/Secret-Santa-.git
   cd Secret-Santa-
 
+
 2️⃣ Install Dependencies : npm install
 
 3️⃣ Add Firebase Configuration
