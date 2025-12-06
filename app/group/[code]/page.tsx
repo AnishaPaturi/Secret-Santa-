@@ -22,15 +22,14 @@ export default function GroupRoom() {
   const [started, setStarted] = useState(false)
 
   const [myPair, setMyPair] = useState<Pair | null>(null)
-  const [revealed, setRevealed] = useState(false)
 
-  // ✅ Restore identity & admin status from localStorage
+  // ✅ Restore identity & admin
   useEffect(() => {
-    const stored = localStorage.getItem(`secret-santa-name-${groupCode}`)
+    const storedName = localStorage.getItem(`secret-santa-name-${groupCode}`)
     const adminFlag = localStorage.getItem(`secret-santa-admin-${groupCode}`)
 
-    if (stored) {
-      setMyName(stored)
+    if (storedName) {
+      setMyName(storedName)
       setHasJoined(true)
     }
 
@@ -39,7 +38,7 @@ export default function GroupRoom() {
     }
   }, [groupCode])
 
-  // ✅ Real-time Firestore sync
+  // ✅ REAL-TIME FIREBASE SYNC (AUTO REFRESH LOGIC)
   useEffect(() => {
     const unsub = onSnapshot(groupRef, snap => {
       if (!snap.exists()) return
@@ -53,19 +52,19 @@ export default function GroupRoom() {
       setPairs(dbPairs)
       setStarted(dbStarted)
 
+      // ✅ AUTO ASSIGN MY RESULT WHEN GAME STARTS
       if (dbStarted && myName.trim()) {
         const found = dbPairs.find(
           p => p.giver.toLowerCase() === myName.toLowerCase()
         )
         setMyPair(found || null)
-        setRevealed(true) // ✅ AUTO-REVEAL AFTER START
       }
     })
 
     return () => unsub()
   }, [groupRef, myName])
 
-  // ✅ Join Group
+  // ✅ JOIN GROUP
   async function joinGroup() {
     const n = myName.trim()
     if (!n) return alert('Enter your name')
@@ -83,7 +82,7 @@ export default function GroupRoom() {
     setHasJoined(true)
   }
 
-  // ✅ Shuffle
+  // ✅ SHUFFLE
   function shuffle(arr: string[]) {
     const a = [...arr]
     for (let i = a.length - 1; i > 0; i--) {
@@ -93,10 +92,10 @@ export default function GroupRoom() {
     return a
   }
 
-  // ✅ Start Game (ADMIN ONLY)
+  // ✅ ADMIN STARTS GAME
   async function startGame() {
     if (!isAdmin) return
-    if (members.length < 2) return alert('Need 2+ players')
+    if (members.length < 2) return alert('Need at least 2 players')
 
     let givers = shuffle([...members])
     let receivers = shuffle([...members])
@@ -105,7 +104,7 @@ export default function GroupRoom() {
       receivers = shuffle([...members])
     }
 
-    const result: Pair[] = givers.map((g, i) => ({
+    const result = givers.map((g, i) => ({
       giver: g,
       receiver: receivers[i],
     }))
@@ -120,17 +119,17 @@ export default function GroupRoom() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-700 to-rose-600 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl p-8 w-full max-w-md space-y-6 shadow-xl text-black">
+      <div className="bg-white p-8 rounded-2xl max-w-md w-full text-center space-y-4 shadow-xl">
 
-        <h2 className="text-2xl font-bold text-center">
+        <h2 className="text-2xl font-bold text-black">
           🎁 Group: {groupCode}
         </h2>
 
-        {/* JOIN */}
+        {/* ✅ JOIN SCREEN */}
         {!hasJoined && !started && (
           <>
             <input
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded text-black"
               placeholder="Enter your name"
               value={myName}
               onChange={e => setMyName(e.target.value)}
@@ -145,30 +144,33 @@ export default function GroupRoom() {
           </>
         )}
 
-        {/* MEMBERS LIST */}
+        {/* ✅ MEMBER LIST */}
         {!started && members.length > 0 && (
           <div className="flex flex-wrap gap-2 justify-center">
             {members.map((m, i) => (
-              <div key={i} className="bg-red-600 text-white px-3 py-1 rounded-full">
+              <span
+                key={i}
+                className="bg-red-600 text-white px-3 py-1 rounded-full"
+              >
                 {m}
-              </div>
+              </span>
             ))}
           </div>
         )}
 
-        {/* ✅ ADMIN START BUTTON ONLY */}
+        {/* ✅ ADMIN START BUTTON */}
         {!started && isAdmin && members.length >= 2 && (
           <button
             onClick={startGame}
             className="w-full bg-green-600 text-white py-2 rounded"
           >
-            🎄 Start the Game
+            🎄 Start Game
           </button>
         )}
 
-        {/* WAITING FOR HOST */}
-        {!started && !isAdmin && (
-          <p className="text-center text-gray-500">
+        {/* ✅ WAITING STATE FOR USERS */}
+        {!started && !isAdmin && hasJoined && (
+          <p className="text-gray-500 text-sm">
             Waiting for host to start the game…
           </p>
         )}
@@ -176,12 +178,20 @@ export default function GroupRoom() {
         {/* ✅ FINAL PRIVATE RESULT */}
         {started && myPair && (
           <>
-            <p className="text-center text-lg">🎁 You give gift to:</p>
-            <p className="text-3xl text-center font-bold text-green-600">
+            <p className="text-lg">🎁 You give gift to:</p>
+            <p className="text-3xl font-bold text-green-600">
               {myPair.receiver}
             </p>
           </>
         )}
+
+        {/* ✅ SAFETY MESSAGE */}
+        {started && !myPair && hasJoined && (
+          <p className="text-sm text-gray-500">
+            Assignment not found yet. Please wait…
+          </p>
+        )}
+
       </div>
     </div>
   )

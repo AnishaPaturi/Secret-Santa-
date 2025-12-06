@@ -9,43 +9,30 @@ import { db } from '@/lib/firebase'
 
 export default function CreateGroupPage() {
   const router = useRouter()
-
   const [code, setCode] = useState('')
-  const [snow, setSnow] = useState(true)
   const [hostName, setHostName] = useState('')
+  const [snow, setSnow] = useState(true)
 
   async function createGroup() {
-    if (!hostName.trim()) {
-      alert('Please enter your name first (Host)')
-      return
-    }
+    const host = hostName.trim()
+    if (!host) return alert('Enter your name first')
 
     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    // ✅ CREATE GROUP WITH FULL STRUCTURE
     await setDoc(doc(db, 'groups', newCode), {
-      admin: hostName.trim(),          // ✅ HOST
-      members: [hostName.trim()],      // ✅ HOST ADDED AS FIRST MEMBER
-      pairs: [],                       // ✅ REQUIRED FOR GAME
-      started: false,                  // ✅ REQUIRED FOR GAME
+      admin: host,
+      members: [host],
+      pairs: [],
+      started: false,
       createdAt: new Date(),
     })
 
-    // ✅ STORE LOCALLY FOR ADMIN PRIVILEGES
-    localStorage.setItem(`secret-santa-name-${newCode}`, hostName.trim())
+    localStorage.setItem(`secret-santa-name-${newCode}`, host)
     localStorage.setItem(`secret-santa-admin-${newCode}`, 'true')
 
     setCode(newCode)
 
-    confetti({
-      particleCount: 180,
-      spread: 120,
-      origin: { y: 0.6 },
-    })
-  }
-
-  function goToGroup() {
-    router.push(`/group/${code}`)
+    confetti({ particleCount: 200, spread: 140 })
   }
 
   const joinLink =
@@ -54,7 +41,7 @@ export default function CreateGroupPage() {
       : ''
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-700 to-rose-600 p-6 overflow-hidden relative">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-700 to-rose-600 p-6 relative overflow-hidden">
 
       {/* ❄️ Snow Toggle */}
       <div className="fixed top-4 right-4 z-30">
@@ -68,7 +55,7 @@ export default function CreateGroupPage() {
 
       {/* ❄️ Snowfall */}
       {snow && (
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none z-0">
           {[...Array(50)].map((_, i) => (
             <div
               key={i}
@@ -84,24 +71,23 @@ export default function CreateGroupPage() {
         </div>
       )}
 
-      {/* 🎅 Animated Santa */}
+      {/* 🎅 Santa */}
       <motion.img
         src="/santa.gif"
-        className="absolute bottom-6 left-6 w-44 z-20"
+        className="absolute bottom-6 left-6 w-44 z-10"
         animate={{ y: [0, -8, 0] }}
         transition={{ repeat: Infinity, duration: 2 }}
       />
 
       {/* 🎁 Main Card */}
-      <div className="bg-white text-black rounded-2xl p-8 w-full max-w-md space-y-5 text-center z-10 shadow-xl">
-        <h1 className="text-2xl font-bold">🎄 Create a Secret Santa Group</h1>
+      <div className="bg-white p-8 rounded-2xl max-w-md w-full text-center space-y-4 z-20 shadow-xl">
+        <h1 className="text-2xl font-bold text-black">🎄 Create Group</h1>
 
         {!code && (
           <>
-            {/* ✅ HOST NAME INPUT (REQUIRED) */}
             <input
-              className="w-full border p-2 rounded"
-              placeholder="Enter your name (Host)"
+              className="w-full border p-2 rounded text-black placeholder-gray-500"
+              placeholder="Your Name (Host)"
               value={hostName}
               onChange={e => setHostName(e.target.value)}
             />
@@ -117,21 +103,16 @@ export default function CreateGroupPage() {
 
         {code && (
           <>
-            <p className="text-lg font-semibold">Group Code</p>
-
-            <p className="text-3xl font-bold tracking-widest bg-gray-100 py-2 rounded text-black">
+            <p className="text-xl font-bold tracking-widest text-black">
               {code}
             </p>
 
-            {/* ✅ QR CODE */}
-            <div className="flex justify-center pt-2">
+            <div className="flex justify-center">
               <QRCodeCanvas value={joinLink} size={160} />
             </div>
 
-            <p className="text-sm text-gray-600">Scan to join instantly</p>
-
             <button
-              onClick={goToGroup}
+              onClick={() => router.push(`/group/${code}`)}
               className="w-full bg-green-600 text-white py-2 rounded"
             >
               Open Group Room
@@ -140,7 +121,7 @@ export default function CreateGroupPage() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(joinLink)
-                alert('Group link copied!')
+                alert('Link copied')
               }}
               className="w-full bg-blue-600 text-white py-2 rounded"
             >
@@ -148,13 +129,6 @@ export default function CreateGroupPage() {
             </button>
           </>
         )}
-
-        <button
-          onClick={() => router.push('/')}
-          className="text-sm text-gray-600 underline"
-        >
-          ← Back to Home
-        </button>
       </div>
 
       {/* ✅ Snow Animation CSS */}
