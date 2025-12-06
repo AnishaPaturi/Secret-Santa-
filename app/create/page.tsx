@@ -1,4 +1,5 @@
 'use client'
+
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import confetti from 'canvas-confetti'
@@ -9,15 +10,28 @@ import { db } from '@/lib/firebase'
 
 export default function CreateGroupPage() {
   const router = useRouter()
+
   const [code, setCode] = useState('')
   const [hostName, setHostName] = useState('')
   const [snow, setSnow] = useState(true)
 
+  // ✅ SOUND EFFECT (FIXED)
+  const createSound =
+    typeof Audio !== 'undefined'
+      ? new Audio('/sounds/celebrate.mp3')
+      : null
+
   async function createGroup() {
     const host = hostName.trim()
-    if (!host) return alert('Enter your name first')
+    if (!host) {
+      alert('Enter your name first')
+      return
+    }
 
-    const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+    const newCode = Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase()
 
     await setDoc(doc(db, 'groups', newCode), {
       admin: host,
@@ -32,7 +46,11 @@ export default function CreateGroupPage() {
 
     setCode(newCode)
 
+    // ✅ CONFETTI
     confetti({ particleCount: 200, spread: 140 })
+
+    // ✅ SOUND (NOW ACTUALLY PLAYS)
+    createSound?.play()
   }
 
   const joinLink =
@@ -47,13 +65,13 @@ export default function CreateGroupPage() {
       <div className="fixed top-4 right-4 z-30">
         <button
           onClick={() => setSnow(!snow)}
-          className="px-3 py-1 bg-white text-black rounded"
+          className="px-3 py-1 bg-white text-black rounded font-semibold shadow"
         >
           ❄️
         </button>
       </div>
 
-      {/* ❄️ Snowfall */}
+      {/* ❄️ Snowfall (FORCED ANIMATION) */}
       {snow && (
         <div className="absolute inset-0 pointer-events-none z-0">
           {[...Array(50)].map((_, i) => (
@@ -81,7 +99,10 @@ export default function CreateGroupPage() {
 
       {/* 🎁 Main Card */}
       <div className="bg-white p-8 rounded-2xl max-w-md w-full text-center space-y-4 z-20 shadow-xl">
-        <h1 className="text-2xl font-bold text-black">🎄 Create Group</h1>
+
+        <h1 className="text-2xl font-bold text-black">
+          🎄 Create Group
+        </h1>
 
         {!code && (
           <>
@@ -94,7 +115,7 @@ export default function CreateGroupPage() {
 
             <button
               onClick={createGroup}
-              className="w-full bg-black text-white py-2 rounded"
+              className="w-full bg-black text-white py-2 rounded font-semibold"
             >
               Generate Group Code
             </button>
@@ -113,7 +134,7 @@ export default function CreateGroupPage() {
 
             <button
               onClick={() => router.push(`/group/${code}`)}
-              className="w-full bg-green-600 text-white py-2 rounded"
+              className="w-full bg-green-600 text-white py-2 rounded font-semibold"
             >
               Open Group Room
             </button>
@@ -123,7 +144,7 @@ export default function CreateGroupPage() {
                 navigator.clipboard.writeText(joinLink)
                 alert('Link copied')
               }}
-              className="w-full bg-blue-600 text-white py-2 rounded"
+              className="w-full bg-blue-600 text-white py-2 rounded font-semibold"
             >
               Copy Share Link
             </button>
@@ -131,7 +152,7 @@ export default function CreateGroupPage() {
         )}
       </div>
 
-      {/* ✅ Snow Animation CSS */}
+      {/* ✅ GLOBAL SNOW ANIMATION (FORCED) */}
       <style jsx global>{`
         @keyframes snow {
           to {
